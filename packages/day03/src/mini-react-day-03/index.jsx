@@ -1,5 +1,17 @@
-import ReactDom from './core/reactDOM.js'
-import React from './core/React.js'
+import { ReactDOM } from 'react'
+import React from 'react'
+// import ReactDom from './core/reactDOM.js'
+// import React from './core/React.js'
+
+// import Counter from './counter.jsx'
+
+// function Counter() {
+//   return (
+//     <div>
+//       <h1>Counter</h1>
+//     </div>
+//   )
+// }
 
 // requestIdleCallback(work)
 
@@ -17,5 +29,6 @@ import React from './core/React.js'
 //   requestIdleCallback(work)
 // }
 
-const dom = React.createElement('div', { id: 'app' }, '嗷嗷', '啦啦啦')
-ReactDom.createRoot(document.querySelector('#root')).render(dom)
+// const App = React.createElement('div', { id: 'app' }, '嗷嗷', '啦啦啦')
+const App = <div>mini react</div>
+ReactDOM.createRoot(document.querySelector('#root')).render(App)
