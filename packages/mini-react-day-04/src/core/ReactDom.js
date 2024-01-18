@@ -1,12 +1,14 @@
-import React from "./React.js";
-const ReactDOM = {
+import React from './React.js'
+
+const ReactDom = {
   createRoot(container) {
     return {
       render(App) {
-        React.render(App, container);
-      },
-    };
-  },
-};
+        // eslint-disable-next-line react/no-deprecated
+        React.render(App, container)
+      }
+    }
+  }
+}
 
-export default ReactDOM;
+export default ReactDom

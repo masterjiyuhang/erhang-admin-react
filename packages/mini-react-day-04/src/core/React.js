@@ -1,11 +1,11 @@
-function createTextNode(text) {
+function createTextNode(textValue) {
   return {
-    type: "TEXT_ELEMENT",
+    type: 'TEXT_NODE',
     props: {
-      nodeValue: text,
-      children: [],
-    },
-  };
+      nodeValue: textValue,
+      children: []
+    }
+  }
 }
 
 function createElement(type, props, ...children) {
@@ -14,140 +14,145 @@ function createElement(type, props, ...children) {
     props: {
       ...props,
       children: children.map((child) => {
-        const isTextNode =
-          typeof child === "string" || typeof child === "number";
-        return isTextNode ? createTextNode(child) : child;
-      }),
-    },
-  };
+        const isTextNode = typeof child === 'string' || typeof child === 'number'
+        return isTextNode ? createTextNode(child) : child
+      })
+    }
+  }
 }
 
-function render(el, container) {
+function render(element, container) {
   nextWorkOfUnit = {
     dom: container,
     props: {
-      children: [el],
-    },
-  };
+      children: [element]
+    }
+  }
 
-  root = nextWorkOfUnit;
+  startRoot = nextWorkOfUnit
 }
 
-let root = null;
-let nextWorkOfUnit = null;
-function workLoop(deadline) {
-  let shouldYield = false;
-  while (!shouldYield && nextWorkOfUnit) {
-    nextWorkOfUnit = performWorkOfUnit(nextWorkOfUnit);
-
-    shouldYield = deadline.timeRemaining() < 1;
+let startRoot = null
+let nextWorkOfUnit = null
+function work(deadline) {
+  // deadline 上面有一个
+  // timeRemaining() 方法，能够获取当前浏览器的剩余空闲时间，单位 ms；
+  // 有一个属性 didTimeout，表示是否超时, 用来判断当前的回调函数是否因超时而被执行。
+  if ((deadline.timeRemaining() > 1 || deadline.didTimeout) && nextWorkOfUnit) {
+    // 走到这里，说明时间有余，我们就可以在这里写自己的代码逻辑
+    nextWorkOfUnit = performWorkOfUnit(nextWorkOfUnit)
   }
 
-  if (!nextWorkOfUnit && root) {
-    commitRoot();
+  if (!nextWorkOfUnit && startRoot) {
+    commitRoot()
   }
 
-  requestIdleCallback(workLoop);
+  // 走到这里，说明时间不够了，就让出控制权给主线程，下次空闲时继续调用
+  requestIdleCallback(work)
 }
 
 function commitRoot() {
-  commitWork(root.child);
-  root = null;
+  commitWork(startRoot.child)
+  startRoot = null
 }
 
 function commitWork(fiber) {
-  if (!fiber) return;
-
-  let fiberParent = fiber.parent;
+  if (!fiber) return
+  let fiberParent = fiber.parent
   while (!fiberParent.dom) {
-    fiberParent = fiberParent.parent;
+    fiberParent = fiberParent.parent
   }
 
   if (fiber.dom) {
-    fiberParent.dom.append(fiber.dom);
+    fiberParent.dom.append(fiber.dom)
   }
-  commitWork(fiber.child);
-  commitWork(fiber.sibling);
+  commitWork(fiber.child)
+  commitWork(fiber.subLing)
 }
 
 function createDom(type) {
-  return type === "TEXT_ELEMENT"
-    ? document.createTextNode("")
-    : document.createElement(type);
+  // console.log('create dom')
+
+  const pTypeList = ['TEXT_NODE', undefined]
+  console.log('🤣🤣🤣🤣 创建虚拟dom', type, pTypeList.includes(type))
+  return type === 'TEXT_NODE' ? document.createTextNode('') : document.createElement(type)
 }
 
-function updateProps(dom, props) {
+const updateDomProps = (dom, props) => {
+  console.log(dom, props, '更新的节点')
+
   Object.keys(props).forEach((key) => {
-    if (key !== "children") {
-      dom[key] = props[key];
+    if (key !== 'children') {
+      dom[key] = props[key]
     }
-  });
+  })
 }
 
 function initChildren(fiber, children) {
-  let prevChild = null;
+  let prevChild = null
+  console.log(children, 'children')
   children.forEach((child, index) => {
-    const newFiber = {
+    const newWorker = {
       type: child.type,
       props: child.props,
       child: null,
       parent: fiber,
-      sibling: null,
-      dom: null,
-    };
+      subLing: null,
+      dom: null
+    }
 
     if (index === 0) {
-      fiber.child = newFiber;
+      fiber.child = newWorker
     } else {
-      prevChild.sibling = newFiber;
+      prevChild.subLing = newWorker
     }
-    prevChild = newFiber;
-  });
+    prevChild = newWorker
+  })
 }
 
 function updateFunctionComponent(fiber) {
-  const children = [fiber.type(fiber.props)];
+  const children = [fiber.type(fiber.props)]
 
-  initChildren(fiber, children);
+  initChildren(fiber, children)
 }
 
 function updateHostComponent(fiber) {
   if (!fiber.dom) {
-    const dom = (fiber.dom = createDom(fiber.type));
+    const dom = (fiber.dom = createDom(fiber.type))
 
-    updateProps(dom, fiber.props);
+    updateDomProps(dom, fiber.props)
   }
 
-  const children = fiber.props.children;
-  initChildren(fiber, children);
+  const children = fiber.props.children
+  initChildren(fiber, children)
 }
 
 function performWorkOfUnit(fiber) {
-  const isFunctionComponent = typeof fiber.type === "function";
+  const isFunctionComponent = typeof fiber.type === 'function'
 
-  if(isFunctionComponent){
+  if (isFunctionComponent) {
     updateFunctionComponent(fiber)
-  }else{
+  } else {
     updateHostComponent(fiber)
   }
 
-  // 4. 返回下一个要执行的任务
+  // 4, 返回下一个要执行的任务
   if (fiber.child) {
-    return fiber.child;
+    return fiber.child
   }
 
-  let nextFiber = fiber;
+  let nextFiber = fiber
   while (nextFiber) {
-    if (nextFiber.sibling) return nextFiber.sibling;
-    nextFiber = nextFiber.parent;
+    if (nextFiber.subLing) return nextFiber.subLing
+    nextFiber = nextFiber.parent
   }
 }
 
-requestIdleCallback(workLoop);
+requestIdleCallback(work)
 
 const React = {
   render,
-  createElement,
-};
+  createElement
+}
 
-export default React;
+export default React
